@@ -54,42 +54,47 @@ class MonteCarlo:
         root_state = True # Whether this is the first state
 
         while not self.state.is_over():
+            # print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+            # print ('Ns: %d | Qsa: %d | Ms: %d' % (len(self.Ns), len(self.Qsa), len(self.Ms)))
+            # print ('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+
             # Perform a simulation on the COPY of current state
             for _sim in range(self.max_sims):
                 try:
                     start_state = self.state.create_copy()
                     self.run_simulator(start_state)
                 except:
-                    print('###################################')
-                    print ("BAD SIMULATION! EXCEPTION OCCURED")
-                    tb = traceback.format_exc()
-                    print (tb)
+                    # print('###################################')
+                    # print ("BAD SIMULATION! EXCEPTION OCCURED")
+                    # tb = traceback.format_exc()
+                    # print (tb)
+                    raise
 
             # Print state
-            self.state.print_board()
+            # self.state.print_board()
 
             # Compute the policy from the root node and add to the batch
             # Add dummy reward to the batch for now, update at end of game
             policy = self._compute_pi(self.state)
-            self.batch.append((self.state.get_stack(), policy, self.state.player_turn()))
+            self.batch.append((self.state.get_stack(), policy, self.state.get_player_turn()))
 
             # Update state and delete not-needed tree
             self.play_move(policy[:], root_state=root_state)
             root_state = False
-            print ('-----------------------------------------------------------------')
+            # print ('-----------------------------------------------------------------')
 
-            if self.mode == 'opp' and (not self.state.is_over()):
-                # Play opponent move
-                s = self.state.get_stack()
-                player_turn = self.state.player_turn()
-                policy = self.state.play_opp()
-                self.batch.append((s, policy, player_turn))
+            # if self.mode == 'opp' and (not self.state.is_over()):
+            #     # Play opponent move
+            #     s = self.state.get_stack()
+            #     get_player_turn = self.state.get_player_turn()
+            #     policy = self.state.play_opp()
+            #     self.batch.append((s, policy, get_player_turn))
 
         # Update the reward and return the batch
         winner = self.state.get_winner()
         print('######################')
         self.state.print_board()
-        print ("And the winner is .... %s !" % ('One' if winner == 1 else 'Two'))
+        print ("And the winner is .... %s !" % ('One' if winner == 1 else ('Two' if winner == -1 else 'Draw')))
 
         for idx, (s, pi, pturn) in enumerate(self.batch):
             r = winner * pturn
@@ -106,14 +111,17 @@ class MonteCarlo:
         valid_moves = state.get_legal_moves()
         assert valid_moves.shape[0] == self.ncols
 
-        counts = np.array([self.Nsa[(s,a)] if (s,a) in self.Nsa else 0 for a in range(self.num_actions)])
+        counts = np.array([self.Nsa[(s,a)] if (s,a) in self.Nsa else 0 for a in range(self.ncols)])
         counts *= valid_moves # Masking with valid moves
 
         if np.sum(counts) == 0:
-            print("All counts had to be masked :( !!")
+            # print("All counts had to be masked :( !!")
+            # print (counts, valid_moves)
             counts = valid_moves
 
-        return np.argmax(counts)
+        policy = np.zeros(self.ncols)
+        policy[np.argmax(counts)] = 1.0
+        return policy
 
     def play_move(self, policy, root_state):
         """
@@ -121,11 +129,12 @@ class MonteCarlo:
         Execute and go to the next state
         """
         if root_state:
-            policy = np.random.randint(self.ncols)
+            policy = np.zeros(self.ncols)
+            policy[np.random.randint(self.ncols)] = 1.0
 
-        a = np.random.choice(np.arange(0, self.num_actions), p=policy)
+        a = np.random.choice(np.arange(0, self.ncols), p=policy)
         self.state.step(a)
-        print("Played %s" % a)
+        # print("Played %s" % a)
 
     def run_simulator(self, state):
         """
@@ -141,8 +150,8 @@ class MonteCarlo:
 
         if s not in self.Ts:
             if state.is_over():
-                self.Ts[s] = state.player_turn() * state.get_winner()
-                assert self.Ts[s] == -1 # I can't be the winner if it's my turn next
+                self.Ts[s] = state.get_player_turn() * state.get_winner()
+                assert self.Ts[s] != 1 # I can't be the winner if it's my turn next
             else:
                 self.Ts[s] = 'Not Over'
 
@@ -160,6 +169,7 @@ class MonteCarlo:
                 p /= sum_p
             else:
                 print ('All valid moves had to be masked!!')
+                print (p, valid_moves)
                 p = valid_moves / np.sum(valid_moves)
             
             self.Ms[s] = valid_moves
@@ -182,17 +192,17 @@ class MonteCarlo:
                 # Taking Q(s,a) = 0 here
                 return self.cpuct * self.Ps[s][a] * np.sqrt(self.Ns[s] + 1e-8)
 
-        for a in range(self.num_actions):
+        for a in range(self.ncols):
             if valid_moves[a]:
                 value = get_Q_plus_U(s, a)
                 if value > best:
                     best = value
                     best_action = a
 
-        assert 0 <= best_action <= ncols - 1
+        assert 0 <= best_action <= self.ncols - 1
 
         # Play the best action
-        state.step(a)
+        state.step(best_action)
 
         # Recursively call simulator on next state
         v = self.run_simulator(state)

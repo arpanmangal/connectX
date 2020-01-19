@@ -72,6 +72,7 @@ class ValueHead(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.fc2(x)
+        # x = x.view(-1)
         return torch.tanh(x)
 
 
@@ -103,6 +104,8 @@ class AlphaNeural(nn.Module):
 
 class NeuralTrainer():
     def __init__(self, res_blocks, input_stack=2, nrows=6, ncols=7, lr=1e-3, epochs=10, batch_size=64):
+        self.nrows = nrows
+        self.ncols = ncols
         self.net = AlphaNeural(res_blocks=res_blocks, input_stack=input_stack, nrows=nrows, ncols=ncols)
         self.lr = lr
         self.epochs = epochs
@@ -117,15 +120,30 @@ class NeuralTrainer():
 
         self.net.train()
 
-        states = torch.Tensor([x[0] for x in examples])
-        policies = torch.Tensor([x[1] for x in examples])
-        values = torch.Tensor([x[2] for x in examples])
+        for i, e in enumerate(examples):
+            try:
+                assert 0 <= e[1] <= self.ncols - 1
+                assert -1 <= e[2] <= 1
+            except:
+                print (e)
+                print (i)
+                raise
+
+        states = torch.FloatTensor([x[0] for x in examples])
+        policies = torch.LongTensor([x[1] for x in examples])
+        values = torch.FloatTensor([x[2] for x in examples])
+
+        # print (states.shape, type(states))
+        # print (policies.shape, type(policies))
+        # print (values.shape, type(values))
+        # print ('=================================================================================')
+        # # exit(0)
 
         train_dataset = TensorDataset(states, policies, values)
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
 
         opt = torch.optim.Adam(self.net.parameters(), weight_decay=1e-4)
-        val_criterion = nn.MSELoss(reduction="mean")
+        val_criterion = nn.MSELoss()
         pi_criterion = nn.CrossEntropyLoss()
 
         for epoch in range(self.epochs):
@@ -133,14 +151,25 @@ class NeuralTrainer():
             value_loss = 0.0
             for s, pi, v in train_loader:
                 if self.cuda_flag:
-                    s, pi, v = s.contiguous().cuda(), pi.contiguous().cuda(), v.contiguous().cuda()
+                    s, pi, v = s.cuda(), pi.cuda(), v.contiguous().cuda()
+                # print (s.shape, pi.shape, v.shape)
+                # print (pi)
+                # print (values)
 
                 # Forward pass
                 opt.zero_grad()
                 pred_pi, pred_v = self.net(s)
+                # print (pred_v.view(-1))
+
+                # print (pred_pi.shape, pred_v.shape)
+                # # print (pred_v)
+                # # print (v)
+                # # print (val_criterion(torch.Tensor(pred_v.cpu().detach().numpy()).cuda(),
+                # #                     torch.Tensor(v.cpu().detach().numpy()).cuda()))
+                # print ('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
 
                 pi_loss = pi_criterion(pred_pi, pi)
-                val_loss = val_criterion(pred_v, v)
+                val_loss = val_criterion(pred_v.view(-1), v)
                 total_loss = pi_loss + val_loss
 
                 policy_loss += pi_loss.item()
@@ -180,6 +209,7 @@ class NeuralTrainer():
         self.net.eval()
         with torch.no_grad():
             pi, v = self.net(board)
+            pi = F.softmax(pi, dim=1)
 
         if single:
             return pi.data.cpu().numpy()[0], v.data.cpu().numpy()[0]

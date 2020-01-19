@@ -16,7 +16,7 @@ class ConnectX:
             move = np.random.randint(0, self.ncols)
             self.step(move)
 
-    def player_turn(self):
+    def get_player_turn(self):
         return self.player_turn
 
     def step(self, move):
@@ -30,7 +30,7 @@ class ConnectX:
 
         self.player_turn *= -1
 
-    def valid_moves(self):
+    def get_legal_moves(self):
         valid_moves = np.zeros(self.ncols, dtype=int)
         valid_moves = (self.board[0] == 0).astype(int)
         return valid_moves
@@ -39,12 +39,15 @@ class ConnectX:
         """
         Returns True if the game has ended
         """
+        if np.sum(self.get_legal_moves()) == 0:
+            # No move left
+            return True
+
         for r in range(self.nrows):
             for c in range(self.ncols):
                 s = np.sum(self.board[r, c:c+self.inarow])
                 if s == self.inarow or s == -self.inarow:
                     return True
-
 
         for c in range(self.ncols):
             for r in range(self.nrows):
@@ -59,6 +62,7 @@ class ConnectX:
                     s += self.board[r+i, c+i]
                 if s == self.inarow or s == -self.inarow:
                     return True
+
         for r in range(self.nrows - self.inarow + 1):
             for c in range(self.ncols - 1, self.inarow - 2, -1):
                 s = 0
@@ -67,6 +71,49 @@ class ConnectX:
                 if s == self.inarow or s == -self.inarow:
                     return True
         return False
+
+    def get_winner(self):
+        """
+        Returns the winner of the game
+        """
+        for r in range(self.nrows):
+            for c in range(self.ncols):
+                s = np.sum(self.board[r, c:c+self.inarow])
+                if s == self.inarow:
+                    return 1
+                elif s == -self.inarow:
+                    return -1
+
+        for c in range(self.ncols):
+            for r in range(self.nrows):
+                s = np.sum(self.board[r:r+self.inarow, c])
+                if s == self.inarow:
+                    return 1
+                elif s == -self.inarow:
+                    return -1
+
+        for r in range(self.nrows - self.inarow + 1):
+            for c in range(self.ncols - self.inarow + 1):
+                s = 0
+                for i in range(self.inarow):
+                    s += self.board[r+i, c+i]
+                if s == self.inarow:
+                    return 1
+                elif s == -self.inarow:
+                    return -1
+
+        for r in range(self.nrows - self.inarow + 1):
+            for c in range(self.ncols - 1, self.inarow - 2, -1):
+                s = 0
+                for i in range(self.inarow):
+                    s += self.board[r+i, c-i]
+                if s == self.inarow:
+                    return 1
+                elif s == -self.inarow:
+                    return -1
+
+        return 0
+
 
     def create_copy(self):
         """
