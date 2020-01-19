@@ -12,7 +12,7 @@ import traceback
 import time
 
 class MonteCarlo:
-    def __init__ (self, nrows, ncols, inarow, net : NeuralTrainer, max_sims : int = 200, mode : str = 'opp'):
+    def __init__ (self, nrows, ncols, inarow, net : NeuralTrainer, max_sims : int = 200, mode : str = 'selfplay'):
         # Initialize the MonteCarlo class
         self.nrows = nrows
         self.ncols = ncols
@@ -22,6 +22,8 @@ class MonteCarlo:
         self.mode = mode
 
         assert self.mode in ['selfplay', 'opp']
+        if self.mode == 'opp':
+            raise NotImplementedError
 
         np.set_printoptions(precision=3)
 
@@ -47,7 +49,7 @@ class MonteCarlo:
         Returns the batch of (s, pi, r) tuples, for updating the fnet
         """
         # Initial state -- an instance of GoEnv
-        self.state = ConnectX(opponent='negamax')
+        self.state = ConnectX(nrows=self.nrows, ncols=self.ncols, inarow=self.inarow)
         self.state.reset()
         root_state = True # Whether this is the first state
 
@@ -78,7 +80,10 @@ class MonteCarlo:
 
             if self.mode == 'opp' and (not self.state.is_over()):
                 # Play opponent move
-                self.state.play_opp()
+                s = self.state.get_stack()
+                player_turn = self.state.player_turn()
+                policy = self.state.play_opp()
+                self.batch.append((s, policy, player_turn))
 
         # Update the reward and return the batch
         winner = self.state.get_winner()
