@@ -117,8 +117,8 @@ class Player:
         running_batch += new_batch
         running_batch = running_batch[-self.batch_size:]
 
-        if len(running_batch) == self.batch_size:
-            # Start training only after generating a full batch
+        if len(running_batch) >= self.batch_size // 4:
+            # Start training only after generating quarter full batch
             for chunk in tqdm(self._chunks(running_batch, len(new_batch) // 4, 8) ):
                 self.fnet.train(chunk, logging=logging, log_file=log_file)
 
@@ -160,5 +160,5 @@ class Player:
 
 if __name__ == '__main__':
     # Create a player
-    player = Player(mcts_sims=200, num_games=10, batch_size=25000, running_batch_file='models/jan19/running_batch.pkl', load_running_batch=False)
-    player.self_play(1000, 'models/jan19/', logging=True, log_file='models/jan19/training.txt', game_offset=0)
+    player = Player(mcts_sims=200, num_games=20, batch_size=25000, fnet='models/jan19/net9.model', running_batch_file='models/jan19/running_batch.pkl', load_running_batch=True)
+    player.self_play(1000, 'models/jan19/', logging=True, log_file='models/jan19/training.txt', game_offset=10)

@@ -72,7 +72,7 @@ class ValueHead(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.fc2(x)
-        # x = x.view(-1)
+        x = x.view(-1)
         return torch.tanh(x)
 
 
@@ -133,17 +133,11 @@ class NeuralTrainer():
         policies = torch.LongTensor([x[1] for x in examples])
         values = torch.FloatTensor([x[2] for x in examples])
 
-        # print (states.shape, type(states))
-        # print (policies.shape, type(policies))
-        # print (values.shape, type(values))
-        # print ('=================================================================================')
-        # # exit(0)
-
         train_dataset = TensorDataset(states, policies, values)
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
 
         opt = torch.optim.Adam(self.net.parameters(), weight_decay=1e-4)
-        val_criterion = nn.MSELoss()
+        val_criterion = nn.MSELoss(reduction="mean")
         pi_criterion = nn.CrossEntropyLoss()
 
         for epoch in range(self.epochs):
@@ -152,24 +146,13 @@ class NeuralTrainer():
             for s, pi, v in train_loader:
                 if self.cuda_flag:
                     s, pi, v = s.cuda(), pi.cuda(), v.contiguous().cuda()
-                # print (s.shape, pi.shape, v.shape)
-                # print (pi)
-                # print (values)
 
                 # Forward pass
                 opt.zero_grad()
                 pred_pi, pred_v = self.net(s)
-                # print (pred_v.view(-1))
-
-                # print (pred_pi.shape, pred_v.shape)
-                # # print (pred_v)
-                # # print (v)
-                # # print (val_criterion(torch.Tensor(pred_v.cpu().detach().numpy()).cuda(),
-                # #                     torch.Tensor(v.cpu().detach().numpy()).cuda()))
-                # print ('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
 
                 pi_loss = pi_criterion(pred_pi, pi)
-                val_loss = val_criterion(pred_v.view(-1), v)
+                val_loss = val_criterion(pred_v, v)
                 total_loss = pi_loss + val_loss
 
                 policy_loss += pi_loss.item()
@@ -188,7 +171,7 @@ class NeuralTrainer():
             if log_file is not None:
                 with open(log_file, 'a') as f:
                     timestamp = str(datetime.datetime.now()).split('.')[0]
-                    f.write("{} | Epoch:{} Policy Loss:{} Value Loss:{}\n".format(timestamp, epoch, policy_loss, value_loss))
+                    f.write("{} | Epoch:{} Policy Loss:{} Value Loss:{}".format(timestamp, epoch, policy_loss, value_loss))
 
         if log_file is not None:
             with open(log_file, 'a') as f:
