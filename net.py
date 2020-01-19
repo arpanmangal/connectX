@@ -102,8 +102,8 @@ class AlphaNeural(nn.Module):
         return action, value
 
 class NeuralTrainer():
-    def __init__(self, res_blocks, input_stack=2, nrows=6, ncols=7, inarow=4, lr=1e-3, epochs=10, batch_size=64):
-        self.net = AlphaNeural(res_blocks=res_blocks, input_stack=input_stack, nrows=nrows, ncols=ncols, inarow=inarow)
+    def __init__(self, res_blocks, input_stack=2, nrows=6, ncols=7, lr=1e-3, epochs=10, batch_size=64):
+        self.net = AlphaNeural(res_blocks=res_blocks, input_stack=input_stack, nrows=nrows, ncols=ncols)
         self.lr = lr
         self.epochs = epochs
         self.batch_size = batch_size
@@ -171,10 +171,18 @@ class NeuralTrainer():
         if self.cuda_flag:
             board = board.contiguous().cuda()
 
+        single = False
+        if board.dim() == 3:
+            # It's a single input
+            single = True
+            board = board.unsqueeze(0)
+
         self.net.eval()
         with torch.no_grad():
-            pi, v == self.net(board)
+            pi, v = self.net(board)
 
+        if single:
+            return pi.data.cpu().numpy()[0], v.data.cpu().numpy()[0]
         return pi.data.cpu().numpy(), v.data.cpu().numpy()
 
     def save_model(self, checkpoint_path):
