@@ -27,7 +27,7 @@ def get_legal_moves(board, ncols=7):
 
 def neural_agent(observation, configuration):
     assert configuration['rows'] == 6 and configuration['columns'] == 7
-    agent = NeuralTrainer(4, 2)
+    agent = NeuralTrainer(3, 2)
     agent.load_model('../models/jan19/net20.model')
 
     board = np.array(observation['board'], dtype=int).reshape((6, 7))
@@ -104,7 +104,7 @@ def get_legal_moves(board, ncols=7):
 
 def agent(observation, configuration):
     assert configuration['rows'] == 6 and configuration['columns'] == 7
-    agent = NeuralTrainer(4, 2)
+    agent = NeuralTrainer(3, 2)
     agent.load_model_dict(load_model())
 
     board = np.array(observation['board'], dtype=int).reshape((6, 7))
@@ -132,4 +132,4 @@ def agent(observation, configuration):
 
 
 if __name__ == '__main__':
-    create_submission_file('models/jan19/net20.model')
+    create_submission_file('models/jan21_3/net2.model')

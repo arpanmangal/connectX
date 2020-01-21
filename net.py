@@ -41,7 +41,7 @@ class ResidualBlock(nn.Module):
 
 
 class PolicyHead(nn.Module):
-    def __init__(self, filters=2, kernel_size=1, batchnorm=True, activ=F.relu, nrows=6, ncols=7, res_filters=128, padding=0):
+    def __init__(self, filters=2, kernel_size=1, batchnorm=True, activ=F.relu, nrows=6, ncols=7, res_filters=256, padding=0):
         super(PolicyHead, self).__init__()
         self.conv = ConvBlock(in_filters=res_filters, out_filters=filters, 
                               kernel_size=kernel_size, batchnorm=batchnorm, padding=padding)
@@ -82,7 +82,7 @@ class AlphaNeural(nn.Module):
         self.nrows = nrows
         self.ncols = ncols
         self.input_stack = input_stack
-        self.res_filters = 128
+        self.res_filters = 48
 
         self.conv1 = ConvBlock(in_filters=self.input_stack, out_filters=self.res_filters)
         for i in range(self.res_blocks):
