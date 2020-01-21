@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class ConnectX:
     def __init__(self, nrows=6, ncols=7, inarow=4):
         self.nrows = nrows

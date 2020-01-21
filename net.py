@@ -1,5 +1,4 @@
 import numpy as np
-from tqdm.auto import tqdm
 import datetime
 
 import torch
@@ -203,4 +202,7 @@ class NeuralTrainer():
     
     def load_model(self, checkpoint_path):
         self.net.load_state_dict(torch.load(checkpoint_path))
+
+    def load_model_dict(self, d):
+        self.net.load_state_dict(d)
 

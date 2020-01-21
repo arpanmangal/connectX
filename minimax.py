@@ -4,7 +4,8 @@ minimax player
 
 import numpy as np
 from kaggle_environments import evaluate, make, utils
-
+import base64
+from io import BytesIO
 
 def make_board(board, nrows, ncols):
     assert len(board) == nrows * ncols
