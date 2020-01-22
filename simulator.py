@@ -38,6 +38,9 @@ class ConnectX:
         """
         Returns True if the game has ended
         """
+        # print ('In is_over: nrows=%d | ncols=%d | inarow=%d' % (self.nrows, self.ncols, self.inarow))
+        # print (self.board)
+
         if np.sum(self.get_legal_moves()) == 0:
             # No move left
             return True
@@ -124,7 +127,17 @@ class ConnectX:
         return copy_sim
 
     def print_board(self):
-        print (self.board, self.player_turn)
+        last_player = 'X' if self.player_turn == -1 else 'O'
+        print ('Last Played: %s | Board: ' % last_player)
+        for row in self.board:
+            for c in row:
+                if c == 1:
+                    print ('X', end='')
+                elif c == -1:
+                    print ('O', end='')
+                else:
+                    print ('.', end='')
+            print()
 
     def get_stack(self):
         stack = np.zeros((2, self.nrows, self.ncols), dtype=int)

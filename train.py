@@ -28,7 +28,7 @@ class Player:
         """
         self.nrows = nrows
         self.ncols = ncols
-        self.inarow = nrows
+        self.inarow = inarow
         self.mcts_sims = mcts_sims
         self.num_games = num_games # Update the network after generating these many number of games
         self.batch_size = batch_size # Size of the running batch
@@ -160,5 +160,5 @@ class Player:
 
 if __name__ == '__main__':
     # Create a player
-    player = Player(mcts_sims=300, num_games=20, batch_size=25000, fnet=None, running_batch_file='models/jan21_3/running_batch.pkl', load_running_batch=False)
-    player.self_play(10000, 'models/jan21_3/', logging=True, log_file='models/jan21_3/training.txt', game_offset=0)
+    player = Player(mcts_sims=500, num_games=20, batch_size=25000, fnet=None, running_batch_file='models/jan22/running_batch.pkl', load_running_batch=False)
+    player.self_play(10000, 'models/jan22/', logging=True, log_file='models/jan22/training.txt', game_offset=0)
